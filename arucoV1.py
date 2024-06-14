@@ -6,7 +6,6 @@
 # Drivers for the camera and OpenCV are included in the base image
 
 import cv2
-import cv2.aruco as aruco
 
 """ 
 gstreamer_pipeline returns a GStreamer pipeline for capturing from the CSI camera
@@ -43,9 +42,9 @@ def gstreamer_pipeline(
     )
 
 def proccessFrame(frame):
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)#Will move to constraints area later
-    corners, ids, rejected = aruco.detectMarkers(frame, aruco_dict)
-    drawnImage = aruco.drawDetectedMarkers(frame.copy(), corners, ids)#Draws boxes around the markers
+    aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)#Will move to constraints area later
+    corners, ids, rejected = cv2.aruco.detectMarkers(frame, aruco_dict)
+    drawnImage = cv2.aruco.drawDetectedMarkers(frame.copy(), corners, ids)#Draws boxes around the markers
     return drawnImage
 
 
