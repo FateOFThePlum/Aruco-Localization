@@ -60,7 +60,7 @@ while True:
 
     tags = at_detector.detect(greyFrame, estimate_tag_pose=True, camera_params=cameraDistortion, tag_size=100)
     if tags:
-        #print(tags[0][7])
+        print(tags[0])
         print("---------------------------------------------")
         cv2.imshow("Found", cv2.polylines(frame, [tags[0][6].astype(np.int32)], True, (255, 0, 255), 2))#Displays Colored Version
         roll, pitch, yaw = rotationMatrixToDegrees(tags[0][7])#Get the angles of the april tag in radians
