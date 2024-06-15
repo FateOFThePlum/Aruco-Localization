@@ -40,9 +40,31 @@ def rotationMatrixToDegrees(matrix): #Don't Ask me to explain this cause I took 
     roll = np.arctan2(matrix[1, 0], matrix[0, 0])
     yaw = np.arcsin(-matrix[2, 0])
     pitch = np.arctan2(matrix[2, 1], matrix[2, 2])
-
-
     return roll, pitch, yaw
+
+def getWorldRelativeSingle(cameraRelativeTranslation, cameraRelativeRot, worldRelativeTranslation, worldRelativeRot):
+    # Sample camera-relative april tag pose
+    T_c_a = np.eye(4)
+    T_c_a[:3, 3] = cameraRelativeTranslation.reshape(3,)  # translation vector
+    R_c_a = cameraRelativeRot
+    T_c_a[:3, :3] = R_c_a
+
+    # Sample field-relative april tag pose (assuming known)
+    T_f_a = np.eye(4)
+    T_f_a[:3, 3] = worldRelativeTranslation  # Translation vector
+    #R_f_a = np.eye(3)  # rotation matrix (assuming no rotation for simplicity)
+    R_f_a = worldRelativeRot
+    T_f_a[:3, :3] = R_f_a
+
+    # Transform from camera-relative to field-relative
+    T_f_c = np.linalg.inv(T_c_a) @ T_f_a
+
+    # Extract translation and rotation from the homogeneous transform
+    R_f_c = T_f_c[:3, :3]
+    t_f_c = T_f_c[:3, 3]
+
+    print("Field-relative camera pose (rotation):\n", R_f_c)
+    print("Field-relative camera pose (translation):\n", t_f_c)
 
 
 while True:
@@ -60,11 +82,12 @@ while True:
 
     tags = at_detector.detect(greyFrame, estimate_tag_pose=True, camera_params=cameraDistortion, tag_size=100)
     if tags:
-        print(tags[0])
+        #print(tags[0])
         print("---------------------------------------------")
         cv2.imshow("Found", cv2.polylines(frame, [tags[0][6].astype(np.int32)], True, (255, 0, 255), 2))#Displays Colored Version
         roll, pitch, yaw = rotationMatrixToDegrees(tags[0][7])#Get the angles of the april tag in radians
         cv2.imshow("ViewPort", viewPort((tags[0][8][0], tags[0][8][1]), roll, frame))
+        getWorldRelativeSingle(tags[0][8], tags[0][7], np.array([0.0, 0.0, 0.0]), np.eye(3))
 
 
 
