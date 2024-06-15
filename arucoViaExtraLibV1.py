@@ -23,6 +23,7 @@ arrowDistance = 50
 
 def viewPort(coordinates, rot, frame):
     shape = frame.shape
+    rot = rot - math.pi/2
     img = np.zeros((shape[0], shape[0], 3), np.uint8)
 
     coordinates = tuple(int((shape[0]/viewPortSize) * elem) for elem in coordinates) #Scales the coordinates into pixels with regard to the viewport size and the size of the window
