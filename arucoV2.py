@@ -46,7 +46,7 @@ while True:
         for x in range(len(markerCorners)):
             rVec, tVec = figureOutCameraCentricPose(markerCorners[x], objectPoints)
 
-            detectedMarkers.append([markerIds[x].ravel().tolist(), rVec.ravel().tolist(), tVec.ravel().tolist(), markerCorners[x].ravel().tolist()])
+            detectedMarkers.append([markerIds[x][0], rVec.ravel().tolist(), tVec.ravel().tolist(), markerCorners[x].ravel().tolist()])
 
         print(detectedMarkers[0])
     exitFrame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds, (255, 255, 0))
