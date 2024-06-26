@@ -1,28 +1,17 @@
 import socket
 import numpy as np
-
-# Server IP address and port
-HOST = "localhost"
-PORT = 5000
-
-# Create two NumPy arrays
-arr1 = np.array([1, 2, 3])
-arr2 = np.array([[4, 5], [6, 7]])
+import pickle
 
 # Create a socket object
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(('localhost', 12345))
 
-# Connect to the server
-sock.connect((HOST, PORT))
+# Create a NumPy array
+array = np.array([[1, 2, 3], [4, 5, 6]])
 
-# Send the shape and data of each array
-for arr in [arr1, arr2]:
-    # Send the shape of the array
-    sock.sendall(str(arr.shape).encode())
-    # Send the data of the array as bytes
-    sock.sendall(arr.tobytes())
+# Serialize the array
+data = pickle.dumps(array)
 
-print("Sent arrays to server")
-
-# Close the socket
-sock.close()
+# Send data
+client_socket.sendall(data)
+client_socket.close()
