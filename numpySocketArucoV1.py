@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
-import socket
-import pickle
+from numpysocket import NumpySocket
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
 
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36H11)
 parameters =  cv2.aruco.DetectorParameters()
@@ -13,9 +14,6 @@ cameraMatrix = np.array([[526.76855366, 0.0,          345.00788018],
                 [0.0,          0.0,          1.0]], dtype=np.float32)
 distCoeffs = np.array([[0.2778742,  -2.06991963,  0.0141893,  -0.00847357,  3.11048818]], dtype=np.float32)
 
-# Create a socket object for sending the numpy array(s)
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('localhost', 12345))
 
 markerSize = 0.1
 
@@ -56,8 +54,8 @@ def gstreamer_pipeline(
         )
     )
 
-
 cam = cv2.VideoCapture(gstreamer_pipeline(flip_method=2), cv2.CAP_GSTREAMER) #Needs to be adjusted based on the camera being used
+
 
 def takePicture(): #In a function to allow for better use on the Jetson, switching cameras is easier
     ret, frame = cam.read()
@@ -69,27 +67,29 @@ def figureOutCameraCentricPose(markerCorners, objectPoints):
     return rVec, tVec
 
 
+with NumpySocket() as s:
+    s.connect(("localhost", 9999)) #TODO: IP address will need to be configured for individual use. 
+    while True: 
+        frame = takePicture() #Capture the image
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #Convert to greyscale because color is unneeded and takes more processing power
+        markerCorners, markerIds, rejectedCandidates = detector.detectMarkers(frame)#Detect tags
+        
+        detectedMarkers = []
+        if markerCorners:
+            for x in range(len(markerCorners)):
+                rVec, tVec = figureOutCameraCentricPose(markerCorners[x], objectPoints)
 
-while True: 
-    frame = takePicture() #Capture the image
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #Convert to greyscale because color is unneeded and takes more processing power
-    markerCorners, markerIds, rejectedCandidates = detector.detectMarkers(frame)#Detect tags
-    
-    detectedMarkers = []
-    if markerCorners:
-        for x in range(len(markerCorners)):
-            rVec, tVec = figureOutCameraCentricPose(markerCorners[x], objectPoints)
+                detectedMarkers.append([markerIds[x][0], rVec.ravel().tolist(), tVec.ravel().tolist(), markerCorners[x][0].tolist()])
 
-            detectedMarkers.append([markerIds[x][0], rVec.ravel().tolist(), tVec.ravel().tolist(), markerCorners[x][0].tolist()])
+            print(detectedMarkers[0])#Is only used to help with debugging, can be removed later
+        exitFrame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds, (255, 255, 0))
+        exitFrame = cv2.resize(cv2.cvtColor(exitFrame, cv2.COLOR_BGR2GRAY), (0, 0), fx = 0.25, fy = 0.25)
 
-        print(detectedMarkers[0])#Is only used to help with debugging, can be removed later
-    exitFrame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds, (255, 255, 0))
 
-    arrayToSend = np.array([[exitFrame], [detectedMarkers]])
+        arrayToSend = np.array([[exitFrame], [detectedMarkers]], dtype=object)
+        print(arrayToSend)
+        s.sendall(arrayToSend)
 
-    #cv2.imshow('Frame',frame)
-    #if cv2.waitKey(1) & 0xFF == ord('q'):
-    # break
 
 cam.release()
 cv2.destroyAllWindows()
